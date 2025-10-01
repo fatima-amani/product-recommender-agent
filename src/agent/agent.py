@@ -8,11 +8,7 @@ from tools.mongo_tool import mongo_tool
 
 from constants import ROOT_AGENT_MODEL
 
-def create_greeting_agent():
-    """
-    Creates and configures the Google ADK greeting agent.
-    This agent is designed to provide personalized greetings and engage in general conversation.
-    """
+def create_product_recommender_agent():
 
     graph_schema = get_graph_schema()
     mongo_schema = get_mongo_schema()

@@ -33,9 +33,9 @@ def run_streamlit_app():
     """
     Sets up and runs the Streamlit web application for the ADK chat assistant.
     """
-    st.set_page_config(page_title="ADK Greeting & Chat Agent", layout="wide")
-    st.title("👋 Greeting & Chat Assistant (Powered by ADK & Gemini)")
-    st.markdown("This application uses the Google Agent Development Kit (ADK) to provide a chat interface.")
+    st.set_page_config(page_title="Product Recommender Agent", layout="wide")
+    st.title("Product Recommender Agent")
+    st.markdown("Developed by Fatima")
     st.divider()
 
     # Initialize ADK runner and session ID

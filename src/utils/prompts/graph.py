@@ -9,6 +9,8 @@ def get_function_response_system():
     - Only read operations are allowed (queries, searches, retrievals)
     - No write, update, or delete operations permitted
     - All read operations are allowed as long as they follow the above rules
+    - Try to optimise the query where you can fetch more and more result
+    - In text based search, search in multiple attribute or relationships.
 
     The graph Schema is:
     """

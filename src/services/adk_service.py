@@ -5,16 +5,7 @@ import os
 from google.adk.sessions import InMemorySessionService
 from google.adk.runners import Runner
 from google.genai import types as genai_types
-from agent.agent import create_greeting_agent
-from constants import APP_NAME_FOR_ADK, USER_ID, INITIAL_STATE, ADK_SESSION_KEY
-
-import asyncio
-import os
-import time
-import streamlit as st
-from google.adk.sessions import InMemorySessionService
-from google.adk.runners import Runner
-from agent.agent import create_greeting_agent
+from agent.agent import create_product_recommender_agent
 from constants import APP_NAME_FOR_ADK, USER_ID, INITIAL_STATE, ADK_SESSION_KEY
 
 @st.cache_resource
@@ -23,7 +14,7 @@ def get_session_service():
 
 @st.cache_resource
 def get_runner():
-    root_agent = create_greeting_agent()
+    root_agent = create_product_recommender_agent()
     session_service = get_session_service()
     return Runner(agent=root_agent, app_name=APP_NAME_FOR_ADK, session_service=session_service)
 

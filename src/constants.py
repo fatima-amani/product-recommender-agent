@@ -1,8 +1,11 @@
-LLM_MODEL="gemini-2.5-flash-lite"
+LLM_MODEL="gemini-2.5-flash"
 
-ROOT_AGENT_MODEL="gemini-2.0-flash"
+ROOT_AGENT_MODEL=LLM_MODEL
 NEO4J_TOOL_MODEL=LLM_MODEL
 MONGO_TOOL_MODEL=LLM_MODEL
+
+NEO4J_TOOL_TEMPERATURE=0.5
+MONGO_TOOL_TEMPERATURE=0.5
 
 APP_NAME_FOR_ADK = "Product Recommender App" # A unique name for your application within ADK, used for session management.
 USER_ID = "fatima" # A default user ID. In a real application, this would be dynamic (e.g., from a login system).

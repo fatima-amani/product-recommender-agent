@@ -4,7 +4,7 @@ from models.mongo import MongoQueryModel, QueryValidationResult
 from utils.prompts.mongo import generate_mongo_query_prompt, get_query_checker_prompt
 from utils.llm_utils import run_llm, serialize
 
-from constants import MONGO_TOOL_MODEL
+from constants import MONGO_TOOL_MODEL,MONGO_TOOL_TEMPERATURE
 
 
 def generate_mongo_query(user_query):
@@ -12,6 +12,7 @@ def generate_mongo_query(user_query):
 
     result = run_llm(
         llm_model=MONGO_TOOL_MODEL,
+        temperature=MONGO_TOOL_TEMPERATURE,
         pydantic_model=MongoQueryModel,
         system_msg=generate_mongo_query_prompt(schema_text),
         human_msg=user_query,
@@ -26,6 +27,7 @@ def validate_mongo_query(query):
 
     result = run_llm(
         llm_model=MONGO_TOOL_MODEL,
+        temperature=MONGO_TOOL_TEMPERATURE,
         pydantic_model=QueryValidationResult,
         system_msg=get_query_checker_prompt(schema_text),
         human_msg=f"Validate this: {query}"        

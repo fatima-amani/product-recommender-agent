@@ -7,7 +7,7 @@ from bson import ObjectId, Decimal128, Binary
 import datetime, base64
 
 
-def run_llm(llm_model, pydantic_model, system_msg="", human_msg="", parameters={}):
+def run_llm(llm_model, pydantic_model, system_msg="", human_msg="", parameters={}, temperature=0.5):
     parser = PydanticOutputParser(pydantic_object=pydantic_model)
     format_instructions = parser.get_format_instructions()
 
