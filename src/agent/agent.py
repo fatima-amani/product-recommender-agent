@@ -8,18 +8,27 @@ from tools.mongo_tool import mongo_tool
 
 from constants import ROOT_AGENT_MODEL
 
-graph_schema = get_graph_schema()
-mongo_schema = get_mongo_schema()
+def create_greeting_agent():
+    """
+    Creates and configures the Google ADK greeting agent.
+    This agent is designed to provide personalized greetings and engage in general conversation.
+    """
 
-root_agent = Agent(
-    name="product_recommender_agent",
-    model=ROOT_AGENT_MODEL,
-    description=(
-        "Agent to recommend products based on user queries. Has access to graph DB and MongoDB querying tools."
-    ),
-    instruction= get_agent_instruction(graph_schema, mongo_schema),
-    tools=[neo4j_tool, mongo_tool],
-)
+    graph_schema = get_graph_schema()
+    mongo_schema = get_mongo_schema()
+    
+    root_agent = Agent(
+        name="product_recommender_agent",
+        model=ROOT_AGENT_MODEL,
+        description=(
+            "Agent to recommend products based on user queries. Has access to graph DB and MongoDB querying tools."
+        ),
+        instruction= get_agent_instruction(graph_schema, mongo_schema),
+        tools=[neo4j_tool, mongo_tool],
+    )
+    
+    return root_agent
+
 
 
 # Export for ADK
