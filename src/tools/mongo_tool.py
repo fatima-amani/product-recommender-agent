@@ -18,8 +18,6 @@ def generate_mongo_query(user_query):
         human_msg=user_query,
     )
     
-    print("\n\n")
-    print(f" Generated query: {result} \n\n")
     return result
 
 def validate_mongo_query(query):
@@ -33,7 +31,6 @@ def validate_mongo_query(query):
         human_msg=f"Validate this: {query}"        
     )
 
-    print(result)
     return result.is_valid
 
 def run_query(model: MongoQueryModel):
