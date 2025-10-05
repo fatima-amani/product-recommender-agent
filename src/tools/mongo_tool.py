@@ -72,9 +72,13 @@ def mongo_tool(user_query: str) -> list:
         query = "find reviews for product 2"
         returns [{"review": "Great product", "rating": 5}]
     """
-    query = generate_mongo_query(user_query)
-    is_valid = validate_mongo_query(query)
-    if(is_valid):
-        return run_query(query)
-    
-    return ["Some error with mongo"]
+    try:
+        query = generate_mongo_query(user_query)
+        is_valid = validate_mongo_query(query)
+        if is_valid:
+            result = run_query(query)
+            return result if result else [{"message": "No results found for the given query"}]
+        else:
+            return [{"error": "Invalid MongoDB query generated", "query": str(query)}]
+    except Exception as e:
+        return [{"error": f"Database query failed: {str(e)}"}]

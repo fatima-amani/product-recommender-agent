@@ -52,7 +52,7 @@ def initialize_adk():
     return runner, session_id
 
 async def run_adk_async(runner: Runner, session_id: str, user_message_text: str):
-    session = runner.session_service.get_session(
+    session = await runner.session_service.get_session(
         app_name=APP_NAME_FOR_ADK, user_id=USER_ID, session_id=session_id
     )
     if not session:
