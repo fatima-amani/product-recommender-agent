@@ -18,8 +18,6 @@ def generate_mongo_query(user_query):
         human_msg=user_query,
     )
     
-    print("\n\n")
-    print(f" Generated query: {result} \n\n")
     return result
 
 def validate_mongo_query(query):
@@ -33,7 +31,6 @@ def validate_mongo_query(query):
         human_msg=f"Validate this: {query}"        
     )
 
-    print(result)
     return result.is_valid
 
 def run_query(model: MongoQueryModel):
@@ -72,9 +69,15 @@ def mongo_tool(user_query: str) -> list:
         query = "find reviews for product 2"
         returns [{"review": "Great product", "rating": 5}]
     """
-    query = generate_mongo_query(user_query)
-    is_valid = validate_mongo_query(query)
-    if(is_valid):
-        return run_query(query)
-    
-    return ["Some error with mongo"]
+    try:
+        print(f"\nMongo_tool received query: {user_query}")
+        query = generate_mongo_query(user_query)
+        is_valid = validate_mongo_query(query)
+        if is_valid:
+            result = run_query(query)
+            print(f"Mongo Tool Result: {result}\n")
+            return result if result else [{"message": "No results found for the given query"}]
+        else:
+            return [{"error": "Invalid MongoDB query generated", "query": str(query)}]
+    except Exception as e:
+        return [{"error": f"Database query failed: {str(e)}"}]

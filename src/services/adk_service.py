@@ -52,7 +52,7 @@ def initialize_adk():
     return runner, session_id
 
 async def run_adk_async(runner: Runner, session_id: str, user_message_text: str):
-    session = runner.session_service.get_session(
+    session = await runner.session_service.get_session(
         app_name=APP_NAME_FOR_ADK, user_id=USER_ID, session_id=session_id
     )
     if not session:
@@ -60,7 +60,6 @@ async def run_adk_async(runner: Runner, session_id: str, user_message_text: str)
         return
 
     content = genai_types.Content(role='user', parts=[genai_types.Part(text=user_message_text)])
-    tool_placeholder = None
 
     async for event in runner.run_async(user_id=USER_ID, session_id=session_id, new_message=content):
         # TOOL CALL
