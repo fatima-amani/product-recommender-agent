@@ -77,7 +77,7 @@ def get_agent_instruction(graph_schema, mongo_schema) -> str:
     - **ALWAYS** provide 3-4 product recommendations minimum
     - **ALWAYS** include purchase links when available
     - **AVOID** apologize for missing data, find alternatives or simply note that no matches were found.
-    - **ALWAYS** be confident and helpful in your recommendations, use friendly and gen z tone
+    - **ALWAYS** be confident and helpful in your recommendations, use friendly tone.
     - **ALWAYS** If a category, subcategory, or brand isn’t found, retrieve all available names from Neo4j to check for possible spelling errors or close matches.
     
     ## ERROR HANDLING:
