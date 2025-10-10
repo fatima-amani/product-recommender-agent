@@ -26,7 +26,6 @@ def initialize_adk():
         session_id = f"streamlit_adk_session_{int(time.time())}_{os.urandom(4).hex()}"
         st.session_state[ADK_SESSION_KEY] = session_id
 
-        # ✅ create_session is async, so run it properly
         asyncio.run(session_service.create_session(
             app_name=APP_NAME_FOR_ADK,
             user_id=USER_ID,
