@@ -1,69 +1,100 @@
 import streamlit as st
 import asyncio
+import time
+from streamlit_mic_recorder import mic_recorder
 from services.adk_service import initialize_adk, run_adk_async
 from constants import MESSAGE_HISTORY_KEY
+from services.stt_service import transcribe_audio
+from services.tts_service import text_to_speech
+
 
 async def handle_user_message(adk_runner, session_id, prompt):
-    """
-    Handles the user message asynchronously, updating Streamlit placeholders dynamically.
-    """
-    # Placeholder for tool loader and tool responses
+    """Handles user message asynchronously, updating Streamlit placeholders."""
     tool_placeholder = st.empty()
-    # Placeholder for the final assistant response
     response_placeholder = st.empty()
 
     async for event in run_adk_async(adk_runner, session_id, prompt):
-        # TOOL CALL
         if event["type"] == "tool_call":
             with tool_placeholder.container():
                 st.markdown(f"⚙️ Calling tool: **{event['name']}** ...")
 
-        # TOOL RESPONSE (update same placeholder)
         elif event["type"] == "tool_response":
             with tool_placeholder.container():
                 st.markdown(f"✅ Tool response received for **{event['name']}**")
 
-        # FINAL RESPONSE (clear tool placeholder)
         elif event["type"] == "final_response":
-            tool_placeholder.empty()  # remove loader/tool messages
-            response_placeholder.markdown(event["text"])  # display final response
+            tool_placeholder.empty()
+            response_placeholder.markdown(event["text"])
             return event["text"]
 
+
 def run_streamlit_app():
-    """
-    Sets up and runs the Streamlit web application for the ADK chat assistant.
-    """
+    """Run the Streamlit web app for the ADK chat assistant."""
     st.set_page_config(page_title="Product Recommender Agent", layout="wide")
-    st.title("Product Recommender Agent")
-    st.markdown("Developed by Fatima")
+    st.title("🛍️ Product Recommender Agent — Voice Conversation Mode")
+    st.markdown("Developed by Fatima — now with continuous voice chat 🗣️🤖")
     st.divider()
 
-    # Initialize ADK runner and session ID
     adk_runner, current_session_id = initialize_adk()
-    
-    st.divider()
-    st.subheader("Chat with the Assistant")
 
-    # Initialize chat message history
+    st.divider()
+    st.subheader("💬 Talk with your Assistant")
+
     if MESSAGE_HISTORY_KEY not in st.session_state:
         st.session_state[MESSAGE_HISTORY_KEY] = []
 
-    # Display chat history
-    for message in st.session_state[MESSAGE_HISTORY_KEY]:
-        with st.chat_message(message["role"]):  # user vs assistant bubble
-            st.markdown(message["content"])
+    # Show message history
+    for msg in st.session_state[MESSAGE_HISTORY_KEY]:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
-    # Handle new user input
-    if prompt := st.chat_input("Ask something..."):
+    # === 🎧 Conversation Mode Toggle ===
+    continuous = st.toggle("Enable continuous voice conversation 🔁", value=False)
+    st.write("🎙️ Click 'Start Recording' to begin talking." if not continuous else "🗣️ Continuous mode is ON.")
+
+    # === Microphone Recorder ===
+    audio_data = mic_recorder(
+        start_prompt="Start Recording",
+        stop_prompt="Stop Recording",
+        key="recorder",
+        just_once=False,
+    )
+
+
+    user_input = None
+
+    if audio_data:
+        st.info("Transcribing your voice...")
+        user_input = transcribe_audio(audio_data["bytes"])
+        if user_input:
+            st.success(f"🗣️ You said: *{user_input}*")
+
+    # === Manual Text Input (fallback) ===
+    text_prompt = st.chat_input("Or type your question here...")
+    if text_prompt:
+        user_input = text_prompt
+
+    if user_input:
         # Display user message
-        st.session_state[MESSAGE_HISTORY_KEY].append({"role": "user", "content": prompt})
+        st.session_state[MESSAGE_HISTORY_KEY].append({"role": "user", "content": user_input})
         with st.chat_message("user"):
-            st.markdown(prompt)
+            st.markdown(user_input)
 
-        # Display assistant bubble and handle tool loader + response
-        with st.chat_message("assistant") as assistant_container:
-            # Pass the container to placeholders inside async function
-            final_response = asyncio.run(handle_user_message(adk_runner, current_session_id, prompt))
+        # Process message
+        with st.chat_message("assistant"):
+            final_response = asyncio.run(handle_user_message(adk_runner, current_session_id, user_input))
+            st.markdown(final_response)
 
-        # Store assistant message in session state
+            # 🔊 Convert response to speech
+            with st.spinner("Converting response to voice..."):
+                audio_bytes = text_to_speech(final_response)
+                if audio_bytes:
+                    st.audio(audio_bytes, format="audio/mp3", autoplay=True)
+
+        # Save to history
         st.session_state[MESSAGE_HISTORY_KEY].append({"role": "assistant", "content": final_response})
+
+        # If conversation mode enabled, short delay → auto restart recording
+        if continuous:
+            time.sleep(1.5)
+            st.experimental_rerun()
