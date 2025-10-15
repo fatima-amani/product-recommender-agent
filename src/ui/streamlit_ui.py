@@ -7,22 +7,16 @@ from services.stt_service import transcribe_audio
 from services.tts_service import text_to_speech
 
 
-async def handle_user_message(adk_runner, session_id, prompt):
-    """Handles user message asynchronously, updating Streamlit placeholders."""
-    tool_placeholder = st.empty()
-    response_placeholder = st.empty()
-
+async def get_assistant_response(adk_runner, session_id, prompt):
+    """
+    Gets assistant response. In this version, we don't stream tool usage to the main UI 
+    to keep the display logic simple. A spinner will be shown instead.
+    """
+    final_text = ""
     async for event in run_adk_async(adk_runner, session_id, prompt):
-        if event["type"] == "tool_call":
-            with tool_placeholder.container():
-                st.markdown(f"⚙️ Calling tool: **{event['name']}** ...")
-        elif event["type"] == "tool_response":
-            with tool_placeholder.container():
-                st.markdown(f"✅ Tool response received for **{event['name']}**")
-        elif event["type"] == "final_response":
-            tool_placeholder.empty()
-            response_placeholder.markdown(event["text"])
-            return event["text"]
+        if event["type"] == "final_response":
+            final_text = event.get("text", "")
+    return final_text
 
 
 def run_streamlit_app():
@@ -36,58 +30,59 @@ def run_streamlit_app():
     if MESSAGE_HISTORY_KEY not in st.session_state:
         st.session_state[MESSAGE_HISTORY_KEY] = []
 
-    # Display message history
+    # --- Display chat history ---
     for msg in st.session_state[MESSAGE_HISTORY_KEY]:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # --- Handle user input from voice or text ---
-    user_input = None
+    # --- Autoplay audio from the last response ---
+    if "autoplay_audio" in st.session_state:
+        audio_bytes = st.session_state.pop("autoplay_audio")
+        st.markdown('<style>.stAudio { display: none; }</style>', unsafe_allow_html=True)
+        st.audio(audio_bytes, format="audio/mp3", autoplay=True)
 
-    # Voice input via sidebar
+    # --- Handle user input (voice or text) ---
+    user_input = None
+    if "user_input_from_voice" in st.session_state:
+        user_input = st.session_state.pop("user_input_from_voice")
     with st.sidebar:
         st.subheader("🎙️ Voice Input")
         st.write("Click the button below to record your question.")
-        audio_data = mic_recorder(
-            start_prompt="Start Recording",
-            stop_prompt="Stop Recording",
-            key="recorder",
-            just_once=False,
-        )
-
+        audio_data = mic_recorder(start_prompt="Start Recording", stop_prompt="Stop Recording", key="recorder", just_once=False)
     if audio_data:
         with st.spinner("Transcribing your voice..."):
             try:
-                user_input = transcribe_audio(audio_data["bytes"])
-                st.sidebar.success(f"🗣️ You said: *{user_input}*")
+                transcribed_text = transcribe_audio(audio_data["bytes"])
+                st.session_state["user_input_from_voice"] = transcribed_text
+                st.sidebar.success(f"🗣️ You said: *{transcribed_text}*")
+                st.rerun()
             except Exception as e:
                 st.sidebar.error(f"Transcription failed: {e}")
-    
-    # Text input via main chat interface
     if text_prompt := st.chat_input("Ask a question..."):
-        if not user_input: # Prioritize voice input if available
+        if not user_input:
              user_input = text_prompt
 
-    # --- Process and display messages ---
+    # --- State Machine: Process new input and generate responses ---
+
+    # 1. If there is new user input, add it to history and rerun to display it immediately.
     if user_input:
-        # Display user message and save to history
         st.session_state[MESSAGE_HISTORY_KEY].append({"role": "user", "content": user_input})
-        with st.chat_message("user"):
-            st.markdown(user_input)
+        st.rerun()
 
-        # Process message and display assistant response
-        with st.chat_message("assistant"):
-            final_response = asyncio.run(handle_user_message(adk_runner, current_session_id, user_input))
-            
-            if final_response:
-                # Save assistant response to history
-                st.session_state[MESSAGE_HISTORY_KEY].append({"role": "assistant", "content": final_response})
+    # 2. If the last message is from the user, generate a response from the agent.
+    if st.session_state[MESSAGE_HISTORY_KEY] and st.session_state[MESSAGE_HISTORY_KEY][-1]["role"] == "user":
+        last_user_message = st.session_state[MESSAGE_HISTORY_KEY][-1]["content"]
+        
+        with st.spinner("Thinking..."):
+            final_response = asyncio.run(get_assistant_response(adk_runner, current_session_id, last_user_message))
 
-                # Convert response to speech and play it
-                with st.spinner("Generating voice..."):
-                    audio_bytes = text_to_speech(final_response)
-                    if audio_bytes:
-                        st.markdown('''<style>.stAudio { display: none; }</style>''', unsafe_allow_html=True)
-                        st.audio(audio_bytes, format="audio/mp3", autoplay=True)
-            else:
-                st.warning("The assistant did not provide a response.")
+        if final_response:
+            with st.spinner("Generating voice..."):
+                audio_bytes = text_to_speech(final_response)
+            st.session_state[MESSAGE_HISTORY_KEY].append({"role": "assistant", "content": final_response})
+            if audio_bytes:
+                st.session_state["autoplay_audio"] = audio_bytes
+        else:
+            st.session_state[MESSAGE_HISTORY_KEY].append({"role": "assistant", "content": "Sorry, I had trouble generating a response."})
+        
+        st.rerun()
