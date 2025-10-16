@@ -4,7 +4,7 @@ from models.mongo import MongoQueryModel, QueryValidationResult
 from utils.prompts.mongo import generate_mongo_query_prompt, get_query_checker_prompt
 from utils.llm_utils import run_llm, serialize
 
-from constants import MONGO_TOOL_MODEL,MONGO_TOOL_TEMPERATURE
+from constants import MONGO_TOOL_MODEL, MONGO_TOOL_TEMPERATURE
 
 
 def generate_mongo_query(user_query):
@@ -64,10 +64,6 @@ def mongo_tool(user_query: str) -> list:
     
     Returns:
         list: Raw JSON data from the MongoDB query.
-    
-    Example:
-        query = "find reviews for product 2"
-        returns [{"review": "Great product", "rating": 5}]
     """
     try:
         print(f"\nMongo_tool received query: {user_query}")

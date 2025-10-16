@@ -1,102 +1,97 @@
 def generate_mongo_query_prompt(schema_text: str) -> str:
-    prompt = """
-    You are a MongoDB query generator for beauty product data. Generate consistent, accurate queries.
+    prompt = f"""
+    You are a MongoDB query generator for a beauty product database. Your primary goal is to generate accurate, efficient, and secure read-only queries. The database contains two main collections: `products` (with pre-computed insights) and `reviews`.
 
-    CRITICAL RULES FOR CONSISTENCY:
-    - ALWAYS use "find" operation for product lookups
-    - ALWAYS target "products" collection for product_id searches
-    - ALWAYS include projection to get only needed fields: url, insight, product_id
-    - ALWAYS limit results to prevent overwhelming responses
-    - Use consistent field names and query patterns
+    **CRITICAL RULES:**
+    1.  **Prioritize the `products` collection**: For any query involving product details, always target the `products` collection to retrieve the `insight` field first.
+    2.  **Use `reviews` for Aggregation ONLY**: Only use the `reviews` collection when asked for a summary or aggregation (e.g., count, average, sentiment breakdown). Do NOT query for individual review texts unless specifically asked for a direct quote.
+    3.  **Always Project**: Use projections to limit the data returned. For the `products` collection, primarily return `product_id` and `insight`.
+    4.  **Be Secure**: Never generate write operations (`insert`, `update`, `delete`). Only `find` and `aggregate` are allowed.
 
-    STANDARD QUERY PATTERNS:
+    **--- QUERY PATTERNS ---**
 
-    For single product by ID:
-    {
-      "operation": "find",
-      "collection": "products", 
-      "filter": { "product_id": 123 },
-      "projection": { "product_id": 1, "url": 1, "insight": 1 },
-      "sort": null,
-      "limit": 1,
-      "skip": null,
-      "pipeline": null,
-      "explanation": "Get product details by ID"
-    }
+    **1. Get Insights for Product(s) (Primary Use Case):**
+    -   **User Query**: "get insights for product_id 123"
+    -   **Generated Query**:
+        ```json
+        {{
+          "operation": "find",
+          "collection": "products",
+          "filter": {{ "product_id": 123 }},
+          "projection": {{ "_id": 0, "product_id": 1, "insight": 1 }},
+          "limit": 1
+        }}
+        ```
 
-    For multiple products by IDs:
-    {
-      "operation": "find",
-      "collection": "products",
-      "filter": { "product_id": { "$in": [123, 456, 789] } },
-      "projection": { "product_id": 1, "url": 1, "insight": 1 },
-      "sort": null,
+    **2. Get Insights for Multiple Products:**
+    -   **User Query**: "fetch insights for products 123, 456, and 789"
+    -   **Generated Query**:
+        ```json
+        {{
+          "operation": "find",
+          "collection": "products",
+          "filter": {{ "product_id": {{ "$in": [123, 456, 789] }} }},
+          "projection": {{ "_id": 0, "product_id": 1, "insight": 1 }},
+          "limit": 10
+        }}
+        ```
+
+    **3. Aggregate Reviews (Secondary Use Case):**
+    -   **User Query**: "summarize the sentiment of reviews for product_id 123"
+    -   **Generated Query**:
+        ```json
+        {{
+          "operation": "aggregate",
+          "collection": "reviews",
+          "pipeline": [
+            {{ "$match": {{ "product_id": 123 }} }},
+            {{ "$group": {{ "_id": "$insight.sentiment", "count": {{ "$sum": 1 }} }} }}
+          ]
+        }}
+        ```
+
+    **MANDATORY JSON STRUCTURE:**
+    Return ONLY a single, valid JSON object adhering to this structure. Do not add any comments or extra text outside the JSON.
+    {{
+      "operation": "find | aggregate",
+      "collection": "products | reviews",
+      "filter": {{...}},
+      "projection": {{...}},
+      "sort": {{...}},
       "limit": 10,
-      "skip": null,
-      "pipeline": null,
-      "explanation": "Get multiple product details"
-    }
+      "skip": 0,
+      "pipeline": [...] | null,
+      "explanation": "A brief, clear explanation of the query's purpose."
+    }}
 
-    For products with purchase URLs:
-    {
-      "operation": "find",
-      "collection": "products",
-      "filter": { "url": { "$exists": true, "$ne": null } },
-      "projection": { "product_id": 1, "url": 1, "insight": 1 },
-      "sort": null,
-      "limit": 5,
-      "skip": null,
-      "pipeline": null,
-      "explanation": "Get products with available purchase URLs"
-    }
-
-    MANDATORY JSON STRUCTURE:
-    {
-      "operation": "find",
-      "collection": "products",
-      "filter": { /* your filter conditions */ },
-      "projection": { "product_id": 1, "url": 1, "insight": 1 },
-      "sort": null,
-      "limit": 10,
-      "skip": null,
-      "pipeline": null,
-      "explanation": "Brief description of query purpose"
-    }
-
-    CONSISTENCY REQUIREMENTS:
-    - Always use same projection fields: product_id, url, insight
-    - Always set reasonable limits (1-10)
-    - Always provide clear explanations
-    - Use consistent filter patterns for similar queries
-    - Return only JSON, no additional text
-    """
-    return prompt + f"\n\nDatabase schema:\n{schema_text}"
-
-
-def get_query_checker_prompt(schema_text ) -> str:
-    prompt =  """
-You are a MongoDB query validator.
-
-Your task:
-1. Validate MongoDB queries against the provided database schema.
-2. Ensure queries are syntactically correct and structured as a JSON object matching the MongoQueryModel:
-   - operation: "find" or "aggregate" (only read operations are allowed)
-   - collection: target collection name
-   - filter: dict for query conditions (default empty dict)
-   - projection: dict for included/excluded fields (optional)
-   - sort: dict for sorting (optional)
-   - limit: integer (optional)
-   - skip: integer (optional)
-   - pipeline: list of aggregation stages (optional)
-   - explanation: short text explaining the query (optional)
-3. If there are syntax errors (missing braces, invalid operators, etc.) or the operation is not allowed (write operations), mark the query as invalid.
-4. Return a JSON object with the following fields:
-   - is_valid: true/false
-   - issues: list of issues found (empty if valid)
-    """
-    format = f"""
-    Database schema:
+    Database Schema:
     {schema_text}
     """
+    return prompt
 
-    return prompt+format
+
+def get_query_checker_prompt(schema_text: str) -> str:
+    prompt = f"""
+    You are a MongoDB query validator. Your task is to validate the provided MongoDB query against the schema and security rules.
+
+    **SCHEMA:**
+    {schema_text}
+
+    **RULES:**
+    1.  The operation must be a read-only operation: "find" or "aggregate". No write operations (`update`, `delete`, `insert`, etc.) are allowed.
+    2.  The collection must exist in the schema (`products` or `reviews`).
+    3.  All fields used in `filter`, `projection`, `sort`, and `pipeline` must be valid according to the schema.
+    4.  The query must be a syntactically correct JSON object matching the required structure.
+
+    **TASK:**
+    Analyze the following query. Return a JSON object indicating if the query is valid and listing any issues found.
+
+    **RESPONSE FORMAT:**
+    ```json
+    {{
+      "is_valid": true | false,
+      "issues": ["Description of issue 1", "Description of issue 2", ...]
+    }}
+    ```
+    """
+    return prompt
