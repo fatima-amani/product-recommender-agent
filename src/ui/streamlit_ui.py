@@ -1,5 +1,6 @@
 import streamlit as st
 import asyncio
+import base64
 from streamlit_mic_recorder import mic_recorder
 from services.adk_service import initialize_adk, run_adk_async
 from constants import MESSAGE_HISTORY_KEY
@@ -30,25 +31,28 @@ def run_streamlit_app():
     if MESSAGE_HISTORY_KEY not in st.session_state:
         st.session_state[MESSAGE_HISTORY_KEY] = []
 
-    # --- Display chat history ---
     for msg in st.session_state[MESSAGE_HISTORY_KEY]:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # --- Autoplay audio from the last response ---
     if "autoplay_audio" in st.session_state:
         audio_bytes = st.session_state.pop("autoplay_audio")
-        st.markdown('<style>.stAudio { display: none; }</style>', unsafe_allow_html=True)
-        st.audio(audio_bytes, format="audio/mp3", autoplay=True)
+        audio_base64 = base64.b64encode(audio_bytes).decode()
+        st.markdown(f"""
+            <audio autoplay>
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+            </audio>
+            """, unsafe_allow_html=True)
 
-    # --- Handle user input (voice or text) ---
     user_input = None
     if "user_input_from_voice" in st.session_state:
         user_input = st.session_state.pop("user_input_from_voice")
     with st.sidebar:
         st.subheader("🎙️ Voice Input")
         st.write("Click the button below to record your question.")
-        audio_data = mic_recorder(start_prompt="Start Recording", stop_prompt="Stop Recording", key="recorder", just_once=False)
+        audio_data = mic_recorder(start_prompt="Start Recording", stop_prompt="Stop Recording", key="recorder", just_once=True)
+        st.markdown("---")
+        st.markdown("Developed by Fatima")
     if audio_data:
         with st.spinner("Transcribing your voice..."):
             try:
@@ -62,14 +66,10 @@ def run_streamlit_app():
         if not user_input:
              user_input = text_prompt
 
-    # --- State Machine: Process new input and generate responses ---
-
-    # 1. If there is new user input, add it to history and rerun to display it immediately.
     if user_input:
         st.session_state[MESSAGE_HISTORY_KEY].append({"role": "user", "content": user_input})
         st.rerun()
 
-    # 2. If the last message is from the user, generate a response from the agent.
     if st.session_state[MESSAGE_HISTORY_KEY] and st.session_state[MESSAGE_HISTORY_KEY][-1]["role"] == "user":
         last_user_message = st.session_state[MESSAGE_HISTORY_KEY][-1]["content"]
         

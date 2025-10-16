@@ -1,35 +1,41 @@
 from deepgram import DeepgramClient
+
 import os
+from dotenv import load_dotenv
+
+from utils.llm_utils import run_llm
+from constants import TTS_MINI_LLM_MODEL
+from models.tts import TTSTextModel
+from utils.prompts.tts import generate_tts_text_prompt
+
+load_dotenv()
 
 def text_to_speech(text: str) -> bytes:
     """
     Convert text to speech using Deepgram's TTS API and return audio as bytes.
-    
-    Args:
-        text: The text to convert to speech
-        
-    Returns:
-        bytes: Audio data in MP3 format
-        
-    Raises:
-        Exception: If the API request fails
     """
     try:
-        # STEP 1: Create a Deepgram client using the API key from environment variables
+        # run llm
+        tts_text = run_llm(
+            llm_model=TTS_MINI_LLM_MODEL,
+            pydantic_model=TTSTextModel,
+            system_msg=generate_tts_text_prompt(),
+            human_msg=f"Text: {text}"
+        )
+
+        tts_text = tts_text.text.strip()
+
         deepgram = DeepgramClient()
 
-        # STEP 2: Call the generate method on the speak property (returns a generator)
         response = deepgram.speak.v1.audio.generate(
-            text=text,
+            text=tts_text,
             model="aura-2-thalia-en"
         )
 
-        # STEP 3: Collect all the bytes from the generator
         audio_chunks = []
         for chunk in response:
             audio_chunks.append(chunk)
         
-        # STEP 4: Combine all chunks into a single bytes object
         audio_bytes = b''.join(audio_chunks)
         
         return audio_bytes

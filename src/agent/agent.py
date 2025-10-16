@@ -3,7 +3,7 @@ from google.adk.agents import Agent
 from database.graph.crud import get_graph_schema
 from database.mongo.crud import get_mongo_schema
 from utils.prompts.agent import get_agent_instruction
-from tools.graph_tool import neo4j_tool
+from tools.graph_tool import graph_tool
 from tools.mongo_tool import mongo_tool
 
 from constants import ROOT_AGENT_MODEL
@@ -20,7 +20,7 @@ def create_product_recommender_agent():
             "Agent to recommend products based on user queries. Has access to graph DB and MongoDB querying tools."
         ),
         instruction= get_agent_instruction(graph_schema, mongo_schema),
-        tools=[neo4j_tool, mongo_tool],
+        tools=[graph_tool, mongo_tool],
     )
     
     return root_agent
