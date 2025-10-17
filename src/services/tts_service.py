@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 
 from utils.llm_utils import run_llm
-from constants import TTS_MINI_LLM_MODEL
+from constants import TTS_MINI_LLM_MODEL, ENABLE_TTS
 from models.tts import TTSTextModel
 from utils.prompts.tts import generate_tts_text_prompt
 
@@ -14,6 +14,8 @@ def text_to_speech(text: str) -> bytes:
     """
     Convert text to speech using Deepgram's TTS API and return audio as bytes.
     """
+    if not ENABLE_TTS:
+        return None
     try:
         # run llm
         tts_text = run_llm(
@@ -41,5 +43,5 @@ def text_to_speech(text: str) -> bytes:
         return audio_bytes
 
     except Exception as e:
-        print(f"Exception: {e}")
-        raise
+        print(f"Exception with TTS model: \n{e}")
+        return None
