@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from utils.llm_utils import run_llm
 from constants import TTS_MINI_LLM_MODEL, ENABLE_TTS
 from models.tts import TTSTextModel
-from utils.prompts.tts import generate_tts_text_prompt
+from prompts.tts import generate_tts_text_prompt
 
 load_dotenv()
 

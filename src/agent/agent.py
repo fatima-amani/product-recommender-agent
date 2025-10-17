@@ -2,7 +2,7 @@ from google.adk.agents import Agent
 
 from database.graph.crud import get_graph_schema
 from database.mongo.crud import get_mongo_schema
-from utils.prompts.agent import get_agent_instruction
+from prompts.agent import get_agent_instruction
 from tools.graph_tool import graph_tool
 from tools.mongo_tool import mongo_tool
 

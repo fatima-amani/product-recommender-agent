@@ -2,7 +2,7 @@ from langchain_neo4j import GraphCypherQAChain
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from database.graph.db import get_graph_db
-from utils.prompts.graph import get_function_response_system
+from prompts.graph import get_function_response_system
 
 from constants import NEO4J_TOOL_MODEL, NEO4J_TOOL_TEMPERATURE
 

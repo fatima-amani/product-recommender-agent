@@ -1,7 +1,7 @@
 from database.mongo.db import get_mongo_db
 from database.mongo.crud import get_mongo_schema
 from models.mongo import MongoQueryModel, QueryValidationResult
-from utils.prompts.mongo import generate_mongo_query_prompt, get_query_checker_prompt
+from prompts.mongo import generate_mongo_query_prompt, get_query_checker_prompt
 from utils.llm_utils import run_llm, serialize
 
 from constants import MONGO_TOOL_MODEL, MONGO_TOOL_TEMPERATURE
