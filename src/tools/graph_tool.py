@@ -2,11 +2,11 @@ from langchain_neo4j import GraphCypherQAChain
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from database.graph.db import get_graph_db
-from utils.prompts.graph import get_function_response_system
+from prompts.graph import get_function_response_system
 
 from constants import NEO4J_TOOL_MODEL, NEO4J_TOOL_TEMPERATURE
 
-def neo4j_tool(user_query: str) -> dict:
+def graph_tool(user_query: str) -> dict:
     """
     Query product graph database using natural language. Returns raw JSON data.
     
@@ -19,7 +19,7 @@ def neo4j_tool(user_query: str) -> dict:
     Returns:
         Raw JSON results from graph database query execution.
     
-    Example: neo4j_tool('Show luxury brands') -> [{'brand': 'Prada'}, ...]
+    Example: graph_tool('Show luxury brands') -> [{'brand': 'Prada'}, ...]
     """
     graph = get_graph_db()
     chain = GraphCypherQAChain.from_llm(
